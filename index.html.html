@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Formazioni">
+<meta name="theme-color" content="#0c1d4d">
+<title>⚽ Formazioni</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:#080808;font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    color:#e5e7eb;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));min-height:100vh}
+  h1{font-size:18px;font-weight:700;margin:0 0 4px;color:#4ade80;letter-spacing:.5px}
+  .sub{font-size:12px;color:#6b7280;margin-bottom:16px}
+  .btnrow{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  button{background:#111827;border:1px solid #374151;color:#e5e7eb;padding:9px 14px;
+    border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+  button:active{background:#1f2937}
+  button.primary{background:#16a34a;border-color:#16a34a;color:#052e16}
+  button.modebtn{flex:1}
+  button.modebtn.active{background:#16a34a;border-color:#16a34a;color:#052e16;font-weight:700}
+  #pitchWrap{position:relative;width:100%;max-width:420px;margin:0 auto;height:min(78vh,620px);
+    border-radius:16px;overflow:hidden;background:linear-gradient(180deg,#173a8a 0%,#0c1d4d 50%,#173a8a 100%);
+    touch-action:none;border:1px solid #1f2937}
+  #boxLayer{position:absolute;inset:0}
+  .tip{font-size:11px;color:#4b5563;text-align:center;margin-top:12px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<h1>⚽ Formazioni</h1>
+<div class="sub">Scrivi i nomi, trascina le caselle, fai lo screenshot</div>
+
+<div class="btnrow">
+  <button id="mode7Btn" class="modebtn">7 vs 7</button>
+  <button id="mode8Btn" class="modebtn">8 vs 8</button>
+</div>
+<div class="btnrow">
+  <button id="resetBtn">↺ Reset posizioni</button>
+  <button id="clearBtn">✕ Cancella nomi</button>
+  <button id="addWBtn">+ ⚪ Bianco</button>
+  <button id="addBBtn">+ ⚫ Nero</button>
+</div>
+
+<button id="saveImgBtn" style="width:100%;padding:12px;border-radius:8px;background:#4ade80;
+  border:none;color:#052e16;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px">
+  📥 Salva come immagine
+</button>
+
+<div id="pitchWrap">
+  <svg width="100%" height="100%" viewBox="0 0 380 620" style="position:absolute;inset:0;pointer-events:none" preserveAspectRatio="none">
+    <line x1="20" y1="320" x2="360" y2="320" stroke="#3b5aa8" stroke-width="1.5" opacity="0.7"/>
+    <circle cx="190" cy="320" r="50" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.7"/>
+    <circle cx="190" cy="320" r="2.5" fill="#3b5aa8" opacity="0.7"/>
+    <rect x="20" y="20" width="340" height="580" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>
+    <rect x="120" y="20" width="140" height="60" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>
+    <rect x="150" y="20" width="80" height="24" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>
+    <rect x="120" y="540" width="140" height="60" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>
+    <rect x="150" y="576" width="80" height="24" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>
+  </svg>
+  <div style="position:absolute;top:10px;left:12px;font-size:11px;color:#93c5fd;font-weight:600;letter-spacing:1px;pointer-events:none">⚫ NERI</div>
+  <div style="position:absolute;bottom:10px;left:12px;font-size:11px;color:#e5e7eb;font-weight:600;letter-spacing:1px;pointer-events:none">⚪ BIANCHI</div>
+  <div id="boxLayer"></div>
+</div>
+
+<div class="tip">⠿ tieni premuto e trascina per spostare · tocca il testo per scrivere il nome<br>
+i nomi restano salvati anche se chiudi la pagina</div>
+
+<script>
+(function(){
+  var wrap = document.getElementById('pitchWrap');
+  var layer = document.getElementById('boxLayer');
+  var BW = 90, BH = 30;
+  var STORAGE_KEY = 'formazioni_layout_v1';
+
+  function boxes7(){
+    return [
+      {id:'n1',x:190,y:55,team:'n',name:''},
+      {id:'n2',x:105,y:135,team:'n',name:''},
+      {id:'n3',x:275,y:135,team:'n',name:''},
+      {id:'n4',x:60,y:215,team:'n',name:''},
+      {id:'n5',x:190,y:215,team:'n',name:''},
+      {id:'n6',x:320,y:215,team:'n',name:''},
+      {id:'n7',x:190,y:285,team:'n',name:''},
+      {id:'b1',x:190,y:565,team:'b',name:''},
+      {id:'b2',x:105,y:485,team:'b',name:''},
+      {id:'b3',x:275,y:485,team:'b',name:''},
+      {id:'b4',x:60,y:405,team:'b',name:''},
+      {id:'b5',x:190,y:405,team:'b',name:''},
+      {id:'b6',x:320,y:405,team:'b',name:''},
+      {id:'b7',x:190,y:335,team:'b',name:''}
+    ];
+  }
+
+  function boxes8(){
+    return [
+      {id:'n1',x:190,y:50,team:'n',name:''},
+      {id:'n2',x:80,y:130,team:'n',name:''},
+      {id:'n3',x:190,y:130,team:'n',name:''},
+      {id:'n4',x:300,y:130,team:'n',name:''},
+      {id:'n5',x:80,y:210,team:'n',name:''},
+      {id:'n6',x:190,y:210,team:'n',name:''},
+      {id:'n7',x:300,y:210,team:'n',name:''},
+      {id:'n8',x:190,y:280,team:'n',name:''},
+      {id:'b1',x:190,y:570,team:'b',name:''},
+      {id:'b2',x:80,y:490,team:'b',name:''},
+      {id:'b3',x:190,y:490,team:'b',name:''},
+      {id:'b4',x:300,y:490,team:'b',name:''},
+      {id:'b5',x:80,y:410,team:'b',name:''},
+      {id:'b6',x:190,y:410,team:'b',name:''},
+      {id:'b7',x:300,y:410,team:'b',name:''},
+      {id:'b8',x:190,y:340,team:'b',name:''}
+    ];
+  }
+
+  function defaultBoxes(){
+    return getMode()==='8' ? boxes8() : boxes7();
+  }
+
+  function getMode(){
+    return localStorage.getItem('formazioni_mode_v1') || '7';
+  }
+  function setMode(m){
+    localStorage.setItem('formazioni_mode_v1', m);
+    updateModeButtons();
+  }
+  function updateModeButtons(){
+    var m = getMode();
+    document.getElementById('mode7Btn').classList.toggle('active', m==='7');
+    document.getElementById('mode8Btn').classList.toggle('active', m==='8');
+  }
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY+'_'+getMode());
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return defaultBoxes();
+  }
+  function save(){
+    var data = [];
+    layer.querySelectorAll('.pbox').forEach(function(el){
+      data.push({
+        id: el.dataset.id,
+        x: parseFloat(el.style.left) + BW/2,
+        y: parseFloat(el.style.top) + BH/2,
+        team: el.dataset.team,
+        name: el.querySelector('input').value
+      });
+    });
+    localStorage.setItem(STORAGE_KEY+'_'+getMode(), JSON.stringify(data));
+  }
+
+  function currentNamesByTeam(){
+    var names = {n:[], b:[]};
+    layer.querySelectorAll('.pbox').forEach(function(el){
+      var v = el.querySelector('input').value;
+      if(v) names[el.dataset.team].push(v);
+    });
+    return names;
+  }
+
+  function switchMode(newMode){
+    if(newMode === getMode()) return;
+    var names = currentNamesByTeam();
+    setMode(newMode);
+    var fresh = defaultBoxes();
+    var idx = {n:0, b:0};
+    fresh.forEach(function(b){
+      var pool = names[b.team];
+      if(idx[b.team] < pool.length){
+        b.name = pool[idx[b.team]];
+        idx[b.team]++;
+      }
+    });
+    render(fresh);
+    save();
+  }
+
+  var W = 380, H = 620;
+  var extraCount = 0;
+
+  function makeBox(data){
+    var el = document.createElement('div');
+    el.className = 'pbox';
+    el.dataset.id = data.id;
+    el.dataset.team = data.team;
+    var isWhite = data.team === 'b';
+    el.style.cssText = 'position:absolute;width:'+BW+'px;height:'+BH+'px;'+
+      'left:'+(data.x-BW/2)+'px;top:'+(data.y-BH/2)+'px;'+
+      'background:'+(isWhite?'#f8fafc':'#111827')+';'+
+      'border:1px solid '+(isWhite?'#cbd5e1':'#374151')+';'+
+      'border-radius:6px;display:flex;align-items:center;'+
+      'box-shadow:0 2px 6px rgba(0,0,0,0.35);user-select:none;';
+
+    var handle = document.createElement('div');
+    handle.textContent = '⠿';
+    handle.style.cssText = 'width:16px;height:100%;display:flex;align-items:center;justify-content:center;'+
+      'font-size:12px;color:'+(isWhite?'#94a3b8':'#6b7280')+';cursor:grab;touch-action:none;flex-shrink:0;';
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Nome';
+    input.value = data.name || '';
+    input.style.cssText = 'flex:1;min-width:0;height:100%;border:none;outline:none;background:transparent;'+
+      'font-size:12px;font-weight:600;text-align:center;color:'+(isWhite?'#0f172a':'#f1f5f9')+';';
+    input.addEventListener('input', save);
+
+    var del = document.createElement('div');
+    del.textContent = '✕';
+    del.style.cssText = 'width:16px;height:100%;display:flex;align-items:center;justify-content:center;'+
+      'font-size:10px;color:'+(isWhite?'#cbd5e1':'#4b5563')+';cursor:pointer;flex-shrink:0;';
+    del.addEventListener('click', function(){ el.remove(); save(); });
+
+    el.appendChild(handle);
+    el.appendChild(input);
+    el.appendChild(del);
+    layer.appendChild(el);
+
+    var dragging=false, offX=0, offY=0;
+    function onDown(e){
+      dragging=true;
+      var pt = e.touches?e.touches[0]:e;
+      var rect = wrap.getBoundingClientRect();
+      var scaleX = W / rect.width, scaleY = H / rect.height;
+      offX = (pt.clientX - rect.left)*scaleX - parseFloat(el.style.left);
+      offY = (pt.clientY - rect.top)*scaleY - parseFloat(el.style.top);
+      handle.style.cursor='grabbing';
+      e.preventDefault();
+    }
+    function onMove(e){
+      if(!dragging) return;
+      var pt = e.touches?e.touches[0]:e;
+      var rect = wrap.getBoundingClientRect();
+      var scaleX = W / rect.width, scaleY = H / rect.height;
+      var nx = (pt.clientX - rect.left)*scaleX - offX;
+      var ny = (pt.clientY - rect.top)*scaleY - offY;
+      nx = Math.max(4, Math.min(W-BW-4, nx));
+      ny = Math.max(4, Math.min(H-BH-4, ny));
+      el.style.left = nx+'px';
+      el.style.top = ny+'px';
+      e.preventDefault();
+    }
+    function onUp(){ if(dragging){ dragging=false; handle.style.cursor='grab'; save(); } }
+
+    handle.addEventListener('mousedown', onDown);
+    handle.addEventListener('touchstart', onDown, {passive:false});
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('touchmove', onMove, {passive:false});
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchend', onUp);
+  }
+
+  function render(boxesData){
+    layer.innerHTML = '';
+    boxesData.forEach(makeBox);
+  }
+
+  updateModeButtons();
+  render(load());
+
+  document.getElementById('mode7Btn').addEventListener('click', function(){ switchMode('7'); });
+  document.getElementById('mode8Btn').addEventListener('click', function(){ switchMode('8'); });
+
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    if(confirm('Ripristinare le posizioni di default? I nomi verranno mantenuti.')){
+      var current = {};
+      layer.querySelectorAll('.pbox').forEach(function(el){
+        current[el.dataset.id] = el.querySelector('input').value;
+      });
+      var fresh = defaultBoxes().map(function(b){
+        b.name = current[b.id] || '';
+        return b;
+      });
+      render(fresh);
+      save();
+    }
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', function(){
+    if(confirm('Cancellare tutti i nomi inseriti?')){
+      layer.querySelectorAll('.pbox input').forEach(function(inp){ inp.value=''; });
+      save();
+    }
+  });
+
+  document.getElementById('addWBtn').addEventListener('click', function(){
+    extraCount++;
+    makeBox({id:'extra_'+Date.now(), x:190+((extraCount%3)-1)*40, y:600, team:'b', name:''});
+    save();
+  });
+  document.getElementById('addBBtn').addEventListener('click', function(){
+    extraCount++;
+    makeBox({id:'extra_'+Date.now(), x:190+((extraCount%3)-1)*40, y:20, team:'n', name:''});
+    save();
+  });
+
+  function escapeXml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function buildExportSvg(){
+    var boxesNow = [];
+    layer.querySelectorAll('.pbox').forEach(function(el){
+      boxesNow.push({
+        x: parseFloat(el.style.left) + BW/2,
+        y: parseFloat(el.style.top) + BH/2,
+        team: el.dataset.team,
+        name: el.querySelector('input').value || ''
+      });
+    });
+
+    var boxesSvg = boxesNow.map(function(b){
+      var isWhite = b.team === 'b';
+      var bg = isWhite ? '#f8fafc' : '#111827';
+      var brd = isWhite ? '#cbd5e1' : '#374151';
+      var txtCol = isWhite ? '#0f172a' : '#f1f5f9';
+      var left = b.x - BW/2, top = b.y - BH/2;
+      var name = escapeXml(b.name || 'Nome');
+      var nameOpacity = b.name ? '1' : '0.4';
+      return '<rect x="'+left+'" y="'+top+'" width="'+BW+'" height="'+BH+'" rx="6" '+
+        'fill="'+bg+'" stroke="'+brd+'" stroke-width="1"/>'+
+        '<text x="'+b.x+'" y="'+(b.y+4)+'" text-anchor="middle" font-size="12" font-weight="600" '+
+        'font-family="-apple-system,sans-serif" fill="'+txtCol+'" opacity="'+nameOpacity+'">'+name+'</text>';
+    }).join('');
+
+    var svg = ''+
+      '<svg xmlns="http://www.w3.org/2000/svg" width="380" height="620" viewBox="0 0 380 620">'+
+      '<rect width="380" height="620" fill="#0c1d4d"/>'+
+      '<line x1="20" y1="320" x2="360" y2="320" stroke="#3b5aa8" stroke-width="1.5" opacity="0.7"/>'+
+      '<circle cx="190" cy="320" r="50" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.7"/>'+
+      '<circle cx="190" cy="320" r="2.5" fill="#3b5aa8" opacity="0.7"/>'+
+      '<rect x="20" y="20" width="340" height="580" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>'+
+      '<rect x="120" y="20" width="140" height="60" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>'+
+      '<rect x="150" y="20" width="80" height="24" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>'+
+      '<rect x="120" y="540" width="140" height="60" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>'+
+      '<rect x="150" y="576" width="80" height="24" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>'+
+      '<text x="12" y="16" font-size="11" fill="#93c5fd" font-weight="700" font-family="-apple-system,sans-serif" letter-spacing="1">NERI</text>'+
+      '<text x="12" y="608" font-size="11" fill="#e5e7eb" font-weight="700" font-family="-apple-system,sans-serif" letter-spacing="1">BIANCHI</text>'+
+      boxesSvg+
+      '</svg>';
+    return svg;
+  }
+
+  document.getElementById('saveImgBtn').addEventListener('click', function(){
+    var svgStr = buildExportSvg();
+    var svgBlob = new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'});
+    var url = URL.createObjectURL(svgBlob);
+
+    var img = new Image();
+    img.onload = function(){
+      var scale = 3;
+      var canvas = document.createElement('canvas');
+      canvas.width = 380 * scale;
+      canvas.height = 620 * scale;
+      var ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0, 380, 620);
+      URL.revokeObjectURL(url);
+
+      canvas.toBlob(function(blob){
+        var link = document.createElement('a');
+        link.download = 'formazione.png';
+        link.href = URL.createObjectURL(blob);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, 'image/png');
+    };
+    img.onerror = function(){
+      alert('Impossibile generare l\'immagine. Prova con lo screenshot.');
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
+})();
+</script>
+</body>
+</html>
