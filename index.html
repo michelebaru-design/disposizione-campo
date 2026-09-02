@@ -44,6 +44,11 @@
   <button id="addBBtn">+ ⚫ Nero</button>
 </div>
 
+<button id="saveImgBtn" style="width:100%;padding:12px;border-radius:8px;background:#4ade80;
+  border:none;color:#052e16;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px">
+  📥 Salva come immagine
+</button>
+
 <div id="pitchWrap">
   <svg width="100%" height="100%" viewBox="0 0 380 620" style="position:absolute;inset:0;pointer-events:none" preserveAspectRatio="none">
     <line x1="20" y1="320" x2="360" y2="320" stroke="#3b5aa8" stroke-width="1.5" opacity="0.7"/>
@@ -290,6 +295,85 @@ i nomi restano salvati anche se chiudi la pagina</div>
     extraCount++;
     makeBox({id:'extra_'+Date.now(), x:190+((extraCount%3)-1)*40, y:20, team:'n', name:''});
     save();
+  });
+
+  function escapeXml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function buildExportSvg(){
+    var boxesNow = [];
+    layer.querySelectorAll('.pbox').forEach(function(el){
+      boxesNow.push({
+        x: parseFloat(el.style.left) + BW/2,
+        y: parseFloat(el.style.top) + BH/2,
+        team: el.dataset.team,
+        name: el.querySelector('input').value || ''
+      });
+    });
+
+    var boxesSvg = boxesNow.map(function(b){
+      var isWhite = b.team === 'b';
+      var bg = isWhite ? '#f8fafc' : '#111827';
+      var brd = isWhite ? '#cbd5e1' : '#374151';
+      var txtCol = isWhite ? '#0f172a' : '#f1f5f9';
+      var left = b.x - BW/2, top = b.y - BH/2;
+      var name = escapeXml(b.name || 'Nome');
+      var nameOpacity = b.name ? '1' : '0.4';
+      return '<rect x="'+left+'" y="'+top+'" width="'+BW+'" height="'+BH+'" rx="6" '+
+        'fill="'+bg+'" stroke="'+brd+'" stroke-width="1"/>'+
+        '<text x="'+b.x+'" y="'+(b.y+4)+'" text-anchor="middle" font-size="12" font-weight="600" '+
+        'font-family="-apple-system,sans-serif" fill="'+txtCol+'" opacity="'+nameOpacity+'">'+name+'</text>';
+    }).join('');
+
+    var svg = ''+
+      '<svg xmlns="http://www.w3.org/2000/svg" width="380" height="620" viewBox="0 0 380 620">'+
+      '<rect width="380" height="620" fill="#0c1d4d"/>'+
+      '<line x1="20" y1="320" x2="360" y2="320" stroke="#3b5aa8" stroke-width="1.5" opacity="0.7"/>'+
+      '<circle cx="190" cy="320" r="50" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.7"/>'+
+      '<circle cx="190" cy="320" r="2.5" fill="#3b5aa8" opacity="0.7"/>'+
+      '<rect x="20" y="20" width="340" height="580" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>'+
+      '<rect x="120" y="20" width="140" height="60" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>'+
+      '<rect x="150" y="20" width="80" height="24" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>'+
+      '<rect x="120" y="540" width="140" height="60" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>'+
+      '<rect x="150" y="576" width="80" height="24" fill="none" stroke="#3b5aa8" stroke-width="1.5" opacity="0.6"/>'+
+      '<text x="12" y="16" font-size="11" fill="#93c5fd" font-weight="700" font-family="-apple-system,sans-serif" letter-spacing="1">NERI</text>'+
+      '<text x="12" y="608" font-size="11" fill="#e5e7eb" font-weight="700" font-family="-apple-system,sans-serif" letter-spacing="1">BIANCHI</text>'+
+      boxesSvg+
+      '</svg>';
+    return svg;
+  }
+
+  document.getElementById('saveImgBtn').addEventListener('click', function(){
+    var svgStr = buildExportSvg();
+    var svgBlob = new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'});
+    var url = URL.createObjectURL(svgBlob);
+
+    var img = new Image();
+    img.onload = function(){
+      var scale = 3;
+      var canvas = document.createElement('canvas');
+      canvas.width = 380 * scale;
+      canvas.height = 620 * scale;
+      var ctx = canvas.getContext('2d');
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0, 380, 620);
+      URL.revokeObjectURL(url);
+
+      canvas.toBlob(function(blob){
+        var link = document.createElement('a');
+        link.download = 'formazione.png';
+        link.href = URL.createObjectURL(blob);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, 'image/png');
+    };
+    img.onerror = function(){
+      alert('Impossibile generare l\'immagine. Prova con lo screenshot.');
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
   });
 })();
 </script>
